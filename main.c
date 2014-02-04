@@ -50,8 +50,32 @@ static load_function load_image;
 
 void (*sdcard_set_of_name)(char *) = NULL;
 
+int load_usart(struct image_info *image)
+{
+	int i, size = 0;
+	char c;
+
+	dbg_info("Loading Serial...\n");
+
+	for (i = 0; i < 4; ++i) {
+		c = usart_getc();
+		size += c << (24 - i * 8);
+	}
+
+	dbg_info("Size OK: %d\n", size);
+
+	char *p = (char *)JUMP_ADDR;
+	while(size--)
+		*p++ = usart_getc();
+
+	return 0;
+}
+
 static int init_loadfunction(void)
 {
+	load_image = &load_usart;
+	return 0;
+
 #if defined(CONFIG_LOAD_LINUX) || defined(CONFIG_LOAD_ANDROID)
 	load_image = &load_kernel;
 #else
